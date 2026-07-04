@@ -1,0 +1,48 @@
+name: API Automation Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:   # lets you trigger it manually from the GitHub UI too
+
+jobs:
+  run-newman:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Newman + reporters
+        run: npm install -g newman newman-reporter-htmlextra newman-reporter-junitfull
+
+      - name: Run API tests
+        run: |
+          mkdir -p reports
+          newman run collections/collection.json \
+            -e environments/environment.json \
+            --env-var username=${{ secrets.DUMMY_USERNAME }} \
+            --env-var password=${{ secrets.DUMMY_PASSWORD }} \
+            -r cli,htmlextra,junitfull \
+            --reporter-htmlextra-export reports/report.html \
+            --reporter-junitfull-export reports/report.xml
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-html-report
+          path: reports/report.html
+
+      - name: Publish test results summary
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: 'reports/report.xml'
