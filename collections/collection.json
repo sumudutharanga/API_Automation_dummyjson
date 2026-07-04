@@ -1,0 +1,623 @@
+{
+	"info": {
+		"_postman_id": "dc710d0d-d9db-48ba-b0bb-2b61bbb2d8b4",
+		"name": "API Automation Learning Path",
+		"description": "A hands-on collection for learning API automation with Postman. Built around DummyJSON (https://dummyjson.com), a free public mock API — no API key required.\n\nLearning path:\n1. Auth — login, refresh token, get current user (token chaining)\n2. Products — full CRUD + search\n3. Users — list + create\n4. Todos — list + create\n\nEach request has test scripts (pm.test) that check status codes, validate response shape, and save values into environment variables for the next request to use. Run the whole collection top to bottom with the Collection Runner to see automation in action.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "47506116",
+		"_collection_link": "https://sumudu-rightmo-4006329.postman.co/workspace/Sumudu-Tharanga's-Workspace~fcceda1e-eced-4ac2-8663-9a66d07cb6a4/collection/47506116-dc710d0d-d9db-48ba-b0bb-2b61bbb2d8b4?action=share&source=collection_link&creator=47506116"
+	},
+	"item": [
+		{
+			"name": "1. Auth",
+			"item": [
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response contains a token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var token = jsonData.accessToken || jsonData.token;",
+									"    pm.expect(token).to.be.a('string').and.not.empty;",
+									"    pm.environment.set(\"access_token\", token);",
+									"    if (jsonData.refreshToken) {",
+									"        pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+									"    }",
+									"});",
+									"",
+									"pm.test(\"Response time is acceptable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\",\n  \"expiresInMins\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Logs in and captures the access token into the environment for use by every later request."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User (Me)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Returns the logged-in user\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('username');",
+									"    pm.environment.set(\"user_id\", jsonData.id);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/auth/me",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"me"
+							]
+						},
+						"description": "Uses the access_token saved from Login to fetch the authenticated user. Demonstrates variable chaining between requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"New token issued\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var token = jsonData.accessToken || jsonData.token;",
+									"    pm.expect(token).to.be.a('string').and.not.empty;",
+									"    pm.environment.set(\"access_token\", token);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"refreshToken\": \"{{refresh_token}}\",\n  \"expiresInMins\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/refresh",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"refresh"
+							]
+						},
+						"description": "Shows how to rotate an access token without logging in again."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Products (CRUD)",
+			"item": [
+				{
+					"name": "Get All Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Products array is not empty\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.products).to.be.an('array').that.is.not.empty;",
+									"    pm.environment.set(\"product_id\", jsonData.products[0].id);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/products?limit=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Fetches a page of products and saves the first product's id for later requests."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Single Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Product has expected fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.all.keys(Object.keys(jsonData));",
+									"    pm.expect(jsonData).to.have.property('title');",
+									"    pm.expect(jsonData).to.have.property('price');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"{{product_id}}"
+							]
+						},
+						"description": "Uses the product_id saved by the previous request."
+					},
+					"response": []
+				},
+				{
+					"name": "Search Products",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Search results relate to query\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.products).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/products/search?q=phone",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"search"
+							],
+							"query": [
+								{
+									"key": "q",
+									"value": "phone"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Created product returned with id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.environment.set(\"new_product_id\", jsonData.id);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Automation Test Product\",\n  \"price\": 29.99,\n  \"category\": \"testing\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/products/add",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"add"
+							]
+						},
+						"description": "DummyJSON simulates creation and returns a new id (not actually persisted). Good for practicing POST + capturing the response id."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Title was updated in response\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.title).to.eql(\"Automation Test Product - Updated\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Automation Test Product - Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"{{product_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Product",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response marks product as deleted\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.isDeleted).to.eql(true);",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"products",
+								"{{product_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Users",
+			"item": [
+				{
+					"name": "Get All Users",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Users array returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.users).to.be.an('array').that.is.not.empty;",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/users?limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create User",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"New user has an id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstName\": \"Automation\",\n  \"lastName\": \"Tester\",\n  \"age\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/add",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"add"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Todos",
+			"item": [
+				{
+					"name": "Get All Todos",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Todos array returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.todos).to.be.an('array');",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/todos?limit=5",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Todo",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"Todo created with correct text\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.todo).to.eql(\"Learn Postman automation\");",
+									"});"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"todo\": \"Learn Postman automation\",\n  \"completed\": false,\n  \"userId\": {{user_id}}\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/todos/add",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"todos",
+								"add"
+							]
+						},
+						"description": "Uses the user_id captured earlier from Get Current User — another example of chaining."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

@@ -1,0 +1,57 @@
+{
+	"id": "877fd2f6-5c6c-4abd-91d8-c1c1bd3b5686",
+	"name": "API Automation Learning - Env",
+	"values": [
+		{
+			"key": "base_url",
+			"value": "https://dummyjson.com",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "username",
+			"value": "emilys",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "password",
+			"value": "emilyspass",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "secret",
+			"enabled": true
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "new_product_id",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2026-07-04T09:49:43.280Z",
+	"_postman_exported_using": "Postman/11.72.0"
+}
